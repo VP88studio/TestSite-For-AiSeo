@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Aether Launcher: A Rust-Native Minecraft Client Built for Up to 100× Performance | MineNews</title>
+<meta name="description" content="Aether Launcher is a Rust-native Minecraft client targeting up to 100× faster performance. MineNews explains the architecture and reviews sample benchmark data.">
+<!-- TEST DOCUMENT: fictional product, sample data, not for publication -->
+<meta name="author" content="Jim Deadman">
+<meta name="robots" content="noindex">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Aether Launcher: A Rust-Native Minecraft Client Built for Up to 100× Performance">
+<meta property="article:author" content="Jim Deadman">
+<meta property="article:published_time" content="2026-11-25">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600;700&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Article","headline":"Aether Launcher: A Rust-Native Minecraft Client Built for Up to 100× Performance","author":{"@type":"Person","name":"Jim Deadman"},"publisher":{"@type":"Organization","name":"MineNews"},"datePublished":"2026-11-25","dateModified":"2026-11-25","inLanguage":"en","about":{"@type":"SoftwareApplication","name":"Aether Launcher","applicationCategory":"GameApplication","programmingLanguage":"Rust"}}
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+{"@type":"Question","name":"What is Aether Launcher?","acceptedAnswer":{"@type":"Answer","text":"Aether Launcher is a Minecraft client written in Rust. Its developers claim up to 100× faster performance than a JVM-based baseline in best-case workloads."}},
+{"@type":"Question","name":"Why would a Rust Minecraft client be faster?","acceptedAnswer":{"@type":"Answer","text":"A native Rust binary has no Java Virtual Machine, no garbage-collection pauses and no JIT warm-up, and it gives developers direct control over memory layout and multithreading."}},
+{"@type":"Question","name":"Is up to 100× faster realistic?","acceptedAnswer":{"@type":"Answer","text":"It is a ceiling for specific workloads, not an average. The sample results in this document show a best case of about 6.5× for world load time and mixed frame-rate results, so any 100× claim needs published methodology and independent reproduction."}},
+{"@type":"Question","name":"What do the sample benchmarks show?","acceptedAnswer":{"@type":"Answer","text":"On the sample test rig, world load time fell from 59 to 9 seconds and memory use from 3.3 GB to 1.6 GB at 32 chunks, while peak frame rate at 32 chunks was higher on Java Edition."}}
+]}
+</script>
+<style>
+:root{--bg:#f6f7f9;--fg:#171a21;--muted:#566070;--card:#ffffff;--line:#d9dde4;--accent:#4a3fd4;--accent-fg:#ffffff;--good:#14866d;--base:#9aa3b2;--hl:#ece9ff;
+ box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10131a;--fg:#e8ebf2;--muted:#9aa4b5;--card:#171b24;--line:#2a303d;--accent:#9d93ff;--accent-fg:#10131a;--good:#43c9a8;--base:#5d6678;--hl:#232048}}
+:root[data-theme="dark"]{--bg:#10131a;--fg:#e8ebf2;--muted:#9aa4b5;--card:#171b24;--line:#2a303d;--accent:#9d93ff;--accent-fg:#10131a;--good:#43c9a8;--base:#5d6678;--hl:#232048}
+html{scroll-padding-top:env(safe-area-inset-top,0px);scroll-behavior:smooth}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:18px/1.7 "Source Serif 4",Georgia,serif}
+.wrap{max-width:46rem;margin:0 auto;padding:0 1.25rem}
+h1,h2,h3,.sans{font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif}
+a{color:var(--accent)}
+a:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.top{border-bottom:1px solid var(--line);padding:.9rem 0}
+.top .wrap{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;flex-wrap:wrap}
+.brand{font:700 1.25rem "IBM Plex Sans",system-ui,sans-serif;text-decoration:none;color:var(--fg)}
+.brand b{color:var(--accent)}
+.top nav{font:400 .9rem "IBM Plex Sans",system-ui,sans-serif;display:flex;gap:1rem;flex-wrap:wrap}
+.top nav a{color:var(--muted);text-decoration:none}
+.top nav a:hover{color:var(--accent)}
+header.hero{padding:3rem 0 1.5rem}
+h1{font-size:clamp(2rem,5.5vw,3.1rem);line-height:1.1;letter-spacing:-.02em;margin:0 0 1rem}
+.dek{font-size:1.2rem;color:var(--muted);margin:0 0 1.25rem}
+.byline{font:400 .95rem/1.5 "IBM Plex Sans",system-ui,sans-serif;color:var(--muted);border-top:1px solid var(--line);padding-top:.9rem}
+.byline strong{color:var(--fg)}
+.disclosure{font:400 .88rem/1.5 "IBM Plex Sans",system-ui,sans-serif;background:var(--hl);border-left:4px solid var(--accent);padding:.7rem 1rem;margin:1.25rem 0;border-radius:0 6px 6px 0}
+.facts{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:1.2rem 1.4rem;margin:1.5rem 0}
+.facts h2{font-size:1.1rem;margin:0 0 .6rem}
+.facts dl{margin:0;display:grid;grid-template-columns:max-content 1fr;gap:.35rem 1.2rem;font-size:1rem;line-height:1.5}
+.facts dt{font:600 .95rem "IBM Plex Sans",system-ui,sans-serif}
+.facts dd{margin:0}
+@media (max-width:34rem){.facts dl{grid-template-columns:1fr}.facts dd{margin-bottom:.5rem}}
+.toc{font:400 .95rem/1.7 "IBM Plex Sans",system-ui,sans-serif;margin:1.5rem 0}
+.toc ol{margin:.4rem 0 0;padding-left:1.3rem}
+h2{font-size:1.65rem;line-height:1.2;margin:3rem 0 .8rem;letter-spacing:-.01em}
+h3{font-size:1.15rem;margin:1.8rem 0 .4rem}
+p{margin:0 0 1.1rem}
+.scroll{overflow-x:auto;margin:1.2rem 0}
+table{border-collapse:collapse;width:100%;min-width:34rem;font:400 .92rem/1.45 "IBM Plex Sans",system-ui,sans-serif;background:var(--card)}
+caption{text-align:left;font-weight:600;padding:.4rem 0}
+th,td{border:1px solid var(--line);padding:.55rem .7rem;text-align:left;vertical-align:top}
+th{background:var(--hl)}
+.bars{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:1.2rem 1.4rem;margin:1.5rem 0;font-family:"IBM Plex Sans",system-ui,sans-serif}
+.bars h3{margin:0 0 .2rem;font-size:1.05rem}
+.bars .sub{font-size:.85rem;color:var(--muted);margin:0 0 1rem}
+.m{margin:0 0 1.1rem}
+.m .lab{font-size:.9rem;font-weight:600;margin-bottom:.3rem}
+.row{display:grid;grid-template-columns:5.2rem 1fr 4.6rem;align-items:center;gap:.6rem;font-size:.85rem;margin:.2rem 0}
+.track{height:.8rem;background:var(--line);border-radius:4px;overflow:hidden}
+.fill{display:block;height:100%;border-radius:4px}
+.fill.j{background:var(--base)}
+.fill.h{background:var(--accent)}
+.val{text-align:right;font-variant-numeric:tabular-nums}
+.note{font-size:.85rem;color:var(--muted)}
+dl.gl dt{font:600 1rem "IBM Plex Sans",system-ui,sans-serif;margin-top:1rem}
+dl.gl dd{margin:.15rem 0 0}
+details{border-top:1px solid var(--line);padding:.9rem 0}
+details:last-of-type{border-bottom:1px solid var(--line)}
+summary{font:600 1.05rem "IBM Plex Sans",system-ui,sans-serif;cursor:pointer}
+details p{margin:.6rem 0 0}
+.cite{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:1rem 1.2rem;font:400 .92rem/1.55 "IBM Plex Sans",system-ui,sans-serif}
+.sources{font:400 .95rem/1.6 "IBM Plex Sans",system-ui,sans-serif;padding-left:1.3rem}
+.sources li{margin-bottom:.5rem}
+footer{border-top:1px solid var(--line);margin-top:3.5rem;padding:1.5rem 0 2.5rem;font:400 .88rem/1.55 "IBM Plex Sans",system-ui,sans-serif;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<div class="top"><div class="wrap"><a class="brand" href="#top">Mine<b>News</b></a>
+<nav aria-label="Article sections"><a href="#overview">Overview</a><a href="#architecture">Architecture</a><a href="#benchmarks">Benchmarks</a><a href="#analysis">Analysis</a><a href="#faq">FAQ</a><a href="#sources">Sources</a></nav></div></div>
+
+<main class="wrap" id="top">
+<article itemscope itemtype="https://schema.org/Article">
+<header class="hero">
+<h1 itemprop="headline">Aether Launcher: A Rust-Native Minecraft Client Built for Up to 100× Performance</h1>
+<p class="dek">A native, JVM-free architecture is the core of Aether Launcher’s performance claim. We explain how it works and test the claim against sample benchmark data.</p>
+<div class="byline">By <strong itemprop="author">Jim Deadman</strong>, MineNews · Published <time datetime="2026-11-25" itemprop="datePublished">25 November 2026</time> · Updated <time datetime="2026-11-25" itemprop="dateModified">25 November 2026</time> · About 8 minute read</div>
+<div class="disclosure"><strong>Test document:</strong> Aether Launcher is a fictional product and this page is not for publication. Benchmark figures are illustrative sample data, not measurements of a real release.</div>
+</header>
+
+<section class="facts" aria-labelledby="keyfacts">
+<h2 id="keyfacts">Key facts</h2>
+<dl>
+<dt>Product</dt><dd>Aether Launcher, a Minecraft client written in Rust.</dd>
+<dt>Headline claim</dt><dd>Up to 100× faster than a Java Virtual Machine (JVM) baseline, a best-case ceiling rather than an average.</dd>
+<dt>Why it can be faster</dt><dd>Native machine code, no garbage-collection pauses, no JIT warm-up, explicit control of memory layout and threads.</dd>
+<dt>Sample data</dt><dd>Illustrative figures show up to 6.5× faster world loading and about half the memory use on one test rig.</dd>
+<dt>Caveat</dt><dd>The sample results are mixed: peak frame rate at 32 chunks is higher on Java Edition.</dd>
+</dl>
+</section>
+
+<nav class="toc" aria-label="Table of contents"><strong>Contents</strong>
+<ol><li><a href="#overview">What Aether Launcher is</a></li><li><a href="#architecture">Why Rust: the technical case</a></li><li><a href="#benchmarks">Sample benchmark data</a></li><li><a href="#analysis">How to read “up to 100×”</a></li><li><a href="#glossary">Glossary</a></li><li><a href="#faq">Frequently asked questions</a></li><li><a href="#sources">References and how to cite</a></li></ol></nav>
+
+<section id="overview">
+<h2>1. What Aether Launcher is</h2>
+<p><strong>Aether Launcher</strong> is a Minecraft client written in <strong>Rust</strong>, a systems programming language that compiles to native machine code. The project’s goal is to remove the overhead of running the game on the JVM and to deliver up to 100× the performance of a Java-based baseline in best-case workloads such as world loading and chunk streaming.</p>
+<p>“Up to” matters. It names the ceiling observed in the most favourable test, not the typical gain. MineNews applies one rule to every performance figure in this article, Aether’s included: report the hardware, game version and render distance, and say whether anyone outside the project reproduced the result.</p>
+</section>
+
+<section id="architecture">
+<h2>2. Why Rust: the technical case</h2>
+<p>These points describe general properties of native Rust clients, not internal details of Aether Launcher.</p>
+<h3>No JVM and no garbage-collection pauses</h3>
+<p>Java Edition runs inside a managed runtime. The garbage collector (GC) periodically stops or slows application threads to reclaim memory, which shows up as frame-time spikes and stutter during chunk loading. Rust has no tracing GC. It manages memory through <em>ownership</em> and <em>borrowing</em>, checked at compile time, so allocations are released deterministically.</p>
+<h3>No JIT warm-up</h3>
+<p>The JVM starts by interpreting bytecode and compiles hot paths just in time. Early gameplay therefore runs slower than steady state. A Rust binary is compiled ahead of time and runs optimised machine code from the first frame, which helps startup and the first seconds of world load.</p>
+<h3>Control of memory layout</h3>
+<p>Rust lets developers choose data-oriented layouts, such as contiguous arrays of block states per chunk section, which are friendly to CPU caches and SIMD vectorisation. Fewer cache misses translate directly into faster meshing, lighting and entity updates.</p>
+<h3>Safe concurrency</h3>
+<p>Rust’s type system rejects data races at compile time. That makes it practical to move chunk generation, lighting and mesh building onto worker threads and keep the render thread free, a common design in native engines.</p>
+<h3>Lower memory footprint</h3>
+<p>Without a managed heap, object headers or heap-sizing slack, resident memory can be substantially lower, which matters on laptops and integrated graphics.</p>
+</section>
+
+<section id="benchmarks">
+<h2>3. Sample benchmark data</h2>
+<p>The figures below are <strong>illustrative sample data</strong> for this test document. They show how Aether Launcher results would be reported: hardware, game version (Java Edition 26.3), render distance and baseline named for every row.</p>
+
+<div class="bars" role="group" aria-label="Aether Launcher versus Java Edition, sample data, Core i7-13700KF with RTX 4080">
+<h3>Aether Launcher vs Java Edition, 32-chunk render distance</h3>
+<p class="sub">Sample data, Core i7-13700KF, GeForce RTX 4080. Shorter bar is better for time and memory; longer is better for frame rate.</p>
+<div class="m"><div class="lab">World load time</div>
+<div class="row"><span>Java</span><span class="track"><span class="fill j" style="width:100%"></span></span><span class="val">59 s</span></div>
+<div class="row"><span>Aether</span><span class="track"><span class="fill h" style="width:15.3%"></span></span><span class="val">9 s</span></div></div>
+<div class="m"><div class="lab">Chunk load after teleport (average)</div>
+<div class="row"><span>Java</span><span class="track"><span class="fill j" style="width:100%"></span></span><span class="val">32 s</span></div>
+<div class="row"><span>Aether</span><span class="track"><span class="fill h" style="width:14.7%"></span></span><span class="val">4.7 s</span></div></div>
+<div class="m"><div class="lab">Memory in play</div>
+<div class="row"><span>Java</span><span class="track"><span class="fill j" style="width:100%"></span></span><span class="val">3.3 GB</span></div>
+<div class="row"><span>Aether</span><span class="track"><span class="fill h" style="width:48.5%"></span></span><span class="val">1.6 GB</span></div></div>
+<div class="m"><div class="lab">Frames per second at 32 chunks (higher is better)</div>
+<div class="row"><span>Java</span><span class="track"><span class="fill j" style="width:100%"></span></span><span class="val">849</span></div>
+<div class="row"><span>Aether</span><span class="track"><span class="fill h" style="width:79.1%"></span></span><span class="val">672</span></div></div>
+<p class="note">Bars are scaled to the Java value in each group. The sample shows large gains in load time and memory and a lower peak frame rate at this render distance.</p>
+</div>
+
+<div class="scroll"><table>
+<caption>Sample results on two test systems (illustrative)</caption>
+<thead><tr><th>System and setting</th><th>Metric</th><th>Java Edition</th><th>Aether Launcher</th></tr></thead>
+<tbody>
+<tr><td>i7-13700KF + RTX 4080, lower render distance</td><td>Frames per second</td><td>2,600</td><td>2,993</td></tr>
+<tr><td>i7-7500U + Intel HD 620 laptop, 12 chunks</td><td>Memory</td><td>2 GB</td><td>797 MB</td></tr>
+<tr><td>i7-7500U + Intel HD 620 laptop, 12 chunks</td><td>Average frames per second</td><td>126</td><td>209</td></tr>
+<tr><td>i7-7500U + Intel HD 620 laptop, 12 chunks</td><td>Chunk load after teleport</td><td>47 s</td><td>60 s</td></tr>
+</tbody></table></div>
+<p>Results vary with hardware, drivers and render distance, and the laptop row shows a case where chunk loading after a teleport was slower than on Java Edition.</p>
+</section>
+
+<section id="analysis">
+<h2>4. How to read “up to 100×”</h2>
+<p><em>This section is MineNews analysis by Jim Deadman.</em></p>
+<p>“Up to” names the best result in the most favourable test. The sample data above peaks at 6.5× for world load time, with memory roughly halved, and shows that gains are uneven: a lower peak frame rate at 32 chunks, and slower post-teleport chunk loading on the older laptop.</p>
+<p>Three conclusions follow. Removing the JVM pays off most in load time, memory and frame-time consistency, where GC pauses and warm-up are costly. Steady-state frame rate depends on the renderer and GPU driver at least as much as on the language. A 100× figure should be read as an upper bound for a narrowly defined workload and published with full methodology.</p>
+</section>
+
+<section id="glossary">
+<h2>5. Glossary</h2>
+<dl class="gl">
+<dt>JVM (Java Virtual Machine)</dt><dd>The managed runtime that executes Java bytecode, including Minecraft: Java Edition.</dd>
+<dt>Garbage collection (GC)</dt><dd>Automatic memory reclamation in managed runtimes. Collection pauses can cause stutter.</dd>
+<dt>JIT (just-in-time) compilation</dt><dd>Compiling frequently executed bytecode to machine code at run time, which causes a warm-up period.</dd>
+<dt>Native binary</dt><dd>A program compiled ahead of time to machine code for a specific CPU architecture and operating system.</dd>
+<dt>Chunk</dt><dd>A 16×16-column section of the Minecraft world that is generated, lit, meshed and rendered as a unit.</dd>
+<dt>Render distance</dt><dd>How many chunks around the player are loaded and drawn. Higher values multiply load and memory cost.</dd>
+<dt>Frame time</dt><dd>Milliseconds to produce one frame. Consistency of frame time determines how smooth the game feels, beyond average fps.</dd>
+<dt>Differential harness</dt><dd>A test that runs the same input through a reimplementation and a reference and compares the results.</dd>
+</dl>
+</section>
+
+<section id="faq">
+<h2>6. Frequently asked questions</h2>
+<details open><summary>What is Aether Launcher?</summary><p>Aether Launcher is a Minecraft client written in Rust. Its developers claim up to 100× faster performance than a JVM-based baseline in best-case workloads.</p></details>
+<details open><summary>Why would a Rust Minecraft client be faster?</summary><p>A native Rust binary has no Java Virtual Machine, no garbage-collection pauses and no JIT warm-up, and it gives developers direct control over memory layout and multithreading.</p></details>
+<details open><summary>Is up to 100× faster realistic?</summary><p>It is a ceiling for specific workloads, not an average. The sample results in this document show a best case of about 6.5× for world load time and mixed frame-rate results, so any 100× claim needs published methodology and independent reproduction.</p></details>
+<details open><summary>What do the sample benchmarks show?</summary><p>On the sample test rig, world load time fell from 59 to 9 seconds and memory use from 3.3 GB to 1.6 GB at 32 chunks, while peak frame rate at 32 chunks was higher on Java Edition.</p></details>
+</section>
+
+<section id="sources">
+<h2>7. References and how to cite</h2>
+<ol class="sources">
+<li>The Rust Programming Language, “Understanding Ownership”: <a href="https://doc.rust-lang.org/book/ch04-00-understanding-ownership.html">doc.rust-lang.org/book</a> (background on memory management without a garbage collector).</li>
+<li>Oracle, Java SE Garbage Collection Tuning Guide: <a href="https://docs.oracle.com/en/java/javase/21/gctuning/">docs.oracle.com/en/java/javase/21/gctuning</a> (background on GC pauses in the JVM).</li>
+</ol>
+<div class="cite"><strong>Cite this article:</strong> Deadman, J. (2026, November 25). <em>Aether Launcher: A Rust-Native Minecraft Client Built for Up to 100× Performance.</em> MineNews.</div>
+</section>
+</article>
+</main>
+
+<footer><div class="wrap">Test document. Aether Launcher is a fictional product and MineNews is not for publication. Not affiliated with, approved by or associated with Mojang or Microsoft. Minecraft is a trademark of Mojang Synergies AB.</div></footer>
+</body>
+</html>
